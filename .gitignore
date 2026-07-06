@@ -1,0 +1,18 @@
+# 编辑器 / 系统垃圾
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Node（万一以后加）
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+.env
+.venv/
