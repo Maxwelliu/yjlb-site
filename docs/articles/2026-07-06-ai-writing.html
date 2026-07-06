@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 写公众号的踩坑实录 · 硬件老兵学 AI</title>
+<meta name="description" content="3 个月用 AI 协助写作的真实经验：哪些提示词有效、哪些无效、怎么避开 AI 味儿。">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">硬</span>
+      硬件老兵学 AI
+    </a>
+    <nav class="nav-links">
+      <a href="../index.html">首页</a>
+      <a href="list.html" class="active">文章</a>
+      <a href="../tools/power-calc.html">工具</a>
+      <a href="https://github.com/" target="_blank">GitHub ↗</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <article class="article">
+      <header>
+        <p class="meta">
+          <span class="tag accent">实战</span>
+          <span class="tag">AI 写作</span>
+          <span class="tag">踩坑</span>
+          · 2026-07-06 · 12 分钟读完
+        </p>
+        <h1>AI 写公众号的踩坑实录</h1>
+      </header>
+
+      <div class="content">
+
+        <p>3 个月前开始用 AI 帮我写公众号。第一周差点放弃 —— 出来的稿子满屏"作为一个 XX，我深知..."，"首先...其次...最后..."，味儿太冲了，发出去读者一眼看出来。</p>
+
+        <p>现在稳定下来了，每周 1-2 篇原创 AI 协助的内容，读者反馈比纯人工还多（不一定更好，但更新频率高了，量变引起质变）。今天把 3 个月踩过的坑总结一下，给同样想用 AI 写东西的朋友参考。</p>
+
+        <h2>坑 1：让 AI 写整篇 = 必废</h2>
+
+        <p>我一开始就这么干：<code>帮我写一篇关于嵌入式 AI 的公众号文章</code>。</p>
+
+        <p>AI 给了一篇 2000 字的稿子，看着挺全。但三个问题：</p>
+        <ul>
+          <li>全是正确的废话，没有任何「我踩过的坑」「我做过的实验」</li>
+          <li>开头必来"在科技飞速发展的今天..."，结尾必来"让我们一起拥抱..."</li>
+          <li>具体数据全是编的（"根据 Gartner 报告..."，"有研究表明..."）</li>
+        </ul>
+
+        <p><strong>教训</strong>：AI 写框架可以，写血肉不行。血肉必须是你自己的真实经历。</p>
+
+        <h2>坑 2：「像朋友一样聊天」这种 prompt 等于没写</h2>
+
+        <p>看到很多教程教「让 AI 模仿你的语气」「要像朋友一样聊天」。试了一个月，出来的还是那个味儿。</p>
+
+        <p>后来想明白了：<strong>AI 没有朋友的概念，它学不到你的语气</strong>。它能学的只有「这种语气的字长分布、句式结构、用词偏好」。</p>
+
+        <p>真正有效的是：<strong>喂它 3-5 篇你自己写的文章，让它总结规律</strong>。比如我让它总结：</p>
+
+        <blockquote>从这 5 篇我的旧文里，分析：
+1. 我的句子平均长度（多少字一句）
+2. 我喜欢用什么句式（陈述？反问？设问？）
+3. 我用哪些口头禅（「说白了」「其实」「你想想」）
+4. 我避免哪些词（「赋能」「闭环」「抓手」「底层逻辑」）
+5. 我怎么开头（讲故事？抛问题？直接上数据？）
+6. 我怎么结尾（给行动建议？留悬念？自嘲？）</blockquote>
+
+        <p>总结出来一份「风格手册」，每次新写都贴给 AI 当约束。这才有用。</p>
+
+        <h2>坑 3：AI 味儿的关键不是词，是「没有自我」</h2>
+
+        <p>「AI 味儿」的本质不是用了「赋能」「闭环」这些词，是<strong>每一句都「四平八稳」，没有任何「我不确定」「我猜」「可能我理解错了」这种真人会有的犹豫</strong>。</p>
+
+        <p>真人的特点：</p>
+        <ul>
+          <li>会承认自己不知道</li>
+          <li>会有偏见（不是每次都客观）</li>
+          <li>会跑题（写着写着想到别的）</li>
+          <li>会有错误（事后要纠错）</li>
+        </ul>
+
+        <p>所以我在 prompt 里特意加：</p>
+
+        <blockquote>如果你不确定某个事实，直接说「这个我不确定，你最好查一下 X」。
+如果有多个观点，挑一个你自己倾向的，说「我倾向 X，理由是 Y，但 Y 也有人反对」。
+不要每次都「客观中立」，那不是人话。</blockquote>
+
+        <p>加了这几句，AI 味儿立马降一半。</p>
+
+        <h2>坑 4：事实核查必须人来，AI 必编</h2>
+
+        <p>AI 编数据的能力超乎想象。它会一本正经地告诉你：</p>
+
+        <ul>
+          <li>「根据 2024 年 IDC 报告，全球 AI 芯片市场规模为 542 亿美元」 —— 数字是编的</li>
+          <li>「马斯克曾在 Twitter 表示...」 —— 这事根本没发生过</li>
+          <li>「Python 之父 Guido van Rossum 说过...」 —— 编的引言</li>
+        </ul>
+
+        <p>现在我的工作流：</p>
+
+        <ol>
+          <li>AI 出稿</li>
+          <li>我把所有「数据」「引言」「来源」标红</li>
+          <li>逐个去原始来源查（10-15 分钟）</li>
+          <li>查不到的一律删掉，不留模糊</li>
+        </ol>
+
+        <p>这一步省不掉。可以省的是排版、起标题、写引言——这些 AI 干得比人快。</p>
+
+        <h2>坑 5：用 AI 改稿比自己重写快 3 倍</h2>
+
+        <p>前面都是说 AI 写稿的坑。现在说一个 AI 真正擅长的：<strong>改稿</strong>。</p>
+
+        <p>我自己写完一稿（1500 字大概要 2 小时），丢给 AI 让它：</p>
+
+        <ul>
+          <li>找啰嗦的地方，帮我砍</li>
+          <li>找逻辑不顺的地方，帮我调顺序</li>
+          <li>找「太官方」的句子，帮我改口语化</li>
+          <li>给 3 个标题备选</li>
+          <li>给 3 个开头备选</li>
+        </ul>
+
+        <p>AI 改完我再过一遍，挑能用的、扔掉瞎改的。**整篇文章的工作流从「写 2 小时 + 改 1 小时」变成「写 2 小时 + AI 改 5 分钟 + 我审 20 分钟」**。省下来 40 分钟。</p>
+
+        <h2>我的当前工作流（稳定版）</h2>
+
+        <ol>
+          <li><strong>选题</strong>：人定。AI 给候选，我挑</li>
+          <li><strong>列大纲</strong>：AI 出 3 个版本，我合并挑最优</li>
+          <li><strong>写初稿</strong>：人写。1500 字 / 篇，2 小时</li>
+          <li><strong>改稿</strong>：AI 改。我审 20 分钟</li>
+          <li><strong>事实核查</strong>：人做。10-15 分钟</li>
+          <li><strong>起标题 + 写摘要</strong>：AI 给 5 个备选，我挑</li>
+          <li><strong>排版</strong>：AI 给排版建议（emoji 位置、分段、配图建议）</li>
+        </ol>
+
+        <p>单篇总工时从「4 小时」降到「2.5 小时」。</p>
+
+        <h2>3 个最常用的 prompt（直接拿走用）</h2>
+
+        <h3>① 大纲生成</h3>
+
+        <blockquote>我要写一篇关于「{topic}」的公众号文章，目标读者是{reader}。
+请给我 3 个大纲版本，每个版本：
+- 用 1 句话说清这篇能给读者什么
+- 列 4-6 个小标题
+- 每个小标题下面写 1 句话说明要讲什么
+不要直接写正文，只给大纲。</blockquote>
+
+        <h3>② 改稿</h3>
+
+        <blockquote>这是我刚写的稿子：
+{paste 全文}
+
+请帮我：
+1. 找出 3 处最啰嗦的句子，告诉我怎么改更简洁
+2. 找出 2 处逻辑不顺的地方，建议怎么调整
+3. 找出 3 处「太官方/AI 味」的句子，改成口语化
+4. 给 3 个标题备选（不超过 20 字）
+5. 给 3 个开头备选（不超过 100 字）
+
+不要改其他部分，只做以上 5 件事。</blockquote>
+
+        <h3>③ 事实核查</h3>
+
+        <blockquote>这篇文章里有这些数据/引言/事实陈述（我标了 *）：
+{paste}
+
+对每一项：
+1. 告诉我你有多大把握这是真的（高/中/低）
+2. 如果是中或低，告诉我最可能的原始来源是什么，我去查
+3. 不要瞎编数据来「修正」它，查不到就告诉我「这个我编的，删掉」</blockquote>
+
+        <h2>一句话总结</h2>
+
+        <p>AI 不是替代你写文章，是<strong>替代你做那些「不体现你价值」的部分</strong>（排版、改稿、起标题、查语法）。体现你价值的部分（选题、观点、真实经历、价值观）必须人来。</p>
+
+        <p>反过来想：如果你写一篇文章，AI 全部能替代，那这篇文章发不发也无所谓——读者不缺这一篇。</p>
+
+        <hr style="margin: 32px 0; border: none; border-top: 1px solid var(--border);">
+
+        <p style="color: var(--text-dim); font-size: 14px;">
+          📎 上面 3 个 prompt 我做成了一个小工具，在 <a href="../tools/prompt-gen.html">Prompt 生成器</a> 里，点一下就能用<br>
+          💬 公众号留言 / 邮件 <a href="mailto:#">xxx@example.com</a>
+        </p>
+
+      </div>
+    </article>
+
+    <p style="text-align: center; margin-top: 40px;">
+      <a href="list.html" style="color: var(--accent);">← 回到文章列表</a>
+    </p>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>© 2026 硬件老兵学 AI · 托管于 GitHub Pages</p>
+  </div>
+</footer>
+
+</body>
+</html>
