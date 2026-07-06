@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Prompt 模板生成器 · 硬件老兵学 AI</title>
+<meta name="description" content="AI Prompt 模板生成器：勾选场景/角色/格式/风格，自动拼出可复制的 prompt。离线可用，纯前端。">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">硬</span>
+      硬件老兵学 AI
+    </a>
+    <nav class="nav-links">
+      <a href="../index.html">首页</a>
+      <a href="../articles/list.html">文章</a>
+      <a href="power-calc.html">工具</a>
+      <a href="prompt-gen.html" class="active">Prompt</a>
+      <a href="https://github.com/" target="_blank">GitHub ↗</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <section class="article">
+      <header>
+        <h1>✍️ AI Prompt 模板生成器</h1>
+        <p class="meta">纯前端 · 离线可用 · 历史记录存本地（localStorage，不上传任何数据）</p>
+      </header>
+
+      <div class="tool">
+        <div class="opt-grid">
+          <div class="opt-row">
+            <label>场景</label>
+            <select id="scenario">
+              <option value="wechat">📝 写公众号文章</option>
+              <option value="code">💻 改 / 写代码</option>
+              <option value="paper">📚 读论文 / 文档</option>
+              <option value="select">🔧 硬件 / 方案选型</option>
+              <option value="workflow">⚙️ 写自动化工作流</option>
+            </select>
+          </div>
+
+          <div class="opt-row">
+            <label>角色</label>
+            <select id="role">
+              <option value="assistant">🤝 助理（直接给答案）</option>
+              <option value="mentor">🎓 导师（启发式）</option>
+              <option value="reviewer">🔍 评审（挑刺）</option>
+              <option value="debater">⚔️ 辩论对手</option>
+              <option value="translator">🗣️ 翻译官（术语解释）</option>
+            </select>
+          </div>
+
+          <div class="opt-row">
+            <label>输出格式</label>
+            <select id="format">
+              <option value="md">📝 Markdown</option>
+              <option value="table">📊 表格</option>
+              <option value="list">🔢 编号列表</option>
+              <option value="plain">📄 纯文本段落</option>
+              <option value="chinese">🇨🇳 中文（每段≤3 行）</option>
+            </select>
+          </div>
+
+          <div class="opt-row">
+            <label>风格</label>
+            <select id="style">
+              <option value="casual">😄 接地气，口语化</option>
+              <option value="professional">📚 专业严谨</option>
+              <option value="concise">⚡ 简洁干练</option>
+              <option value="detailed">📖 详细展开</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="opt-row">
+          <label>主题 / 目标（必填）</label>
+          <input id="topic" type="text" placeholder="例：嵌入式 + 大模型本地化部署 / 把串口改成 DMA 接收">
+          <p class="hint">一句话说清楚你要 AI 干什么</p>
+        </div>
+
+        <button class="btn-primary" onclick="promptGen.generate()" style="width: 100%;">
+          🎯 生成 Prompt
+        </button>
+      </div>
+
+      <div id="output-section" class="tool" style="display: none; margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="margin: 0;">📋 生成的 Prompt（可直接复制）</h3>
+          <button id="btn-copy" class="btn-secondary" onclick="promptGen.copyOutput()">
+            📎 复制
+          </button>
+        </div>
+        <textarea id="output" class="output-box" readonly></textarea>
+        <p style="color: var(--text-dim); font-size: 13px; margin-top: 10px;">
+          💡 <strong>使用方法</strong>：复制 → 粘到 ChatGPT/Claude/通义/DeepSeek → 手动补占位符（如 <code>{CODE}</code> 换成你的代码）→ 发送
+        </p>
+      </div>
+
+      <div style="margin-top: 32px;">
+        <h3>📜 历史记录</h3>
+        <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 14px;">
+          最近 20 次生成的记录，存浏览器 localStorage（清缓存会丢）。点击某条可看摘要。
+        </p>
+        <div id="history">
+          <p style="color: var(--text-dim); font-size: 14px;">还没有历史记录。</p>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-elevated); border-radius: 8px; padding: 20px; margin-top: 24px;">
+        <h3 style="margin-top: 0;">💡 这个工具的设计思路</h3>
+        <ul style="font-size: 14px; color: var(--text-dim);">
+          <li><strong>场景 × 角色 × 格式 × 风格</strong> 四个维度拼接，避免每次从零写 prompt</li>
+          <li><strong>自检 checklist</strong> 帮你判断 AI 回答质量（不是单看"它说了什么"，而是"它有没有做到"）</li>
+          <li><strong>反例提醒</strong> 提前告诉你这个 prompt 容易写错的几种方式</li>
+          <li><strong>占位符提示</strong>：模板里有 <code>{CODE}</code> 这种占位符，告诉你该填什么</li>
+        </ul>
+        <p style="font-size: 14px; color: var(--text-dim); margin-bottom: 0;">
+          ⚠️ 生成的 prompt 是<strong>起点不是终点</strong>。真要用时还是要根据实际情况微调，但 80% 情况直接复制能用。
+        </p>
+      </div>
+
+    </section>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>© 2026 硬件老兵学 AI · 托管于 GitHub Pages</p>
+  </div>
+</footer>
+
+<script src="../js/prompt-gen.js"></script>
+
+</body>
+</html>
