@@ -199,15 +199,15 @@
     <div class="content-area">
       <!-- Hotspots Tab -->
       <div id="tab-hotspots" class="tab-content active" style="width:100%">
-        <div class="flex h-full">
+        <div class="flex h-full" style="overflow-y:auto; height:calc(100vh - 120px)">
           <!-- Left: Table -->
           <div class="left-panel">
             <div class="panel-header">
               <div class="panel-title">热点看板</div>
               <div class="view-toggle">
-                <button class="view-btn active" onclick="setView('both')">双栏</button>
-                <button class="view-btn" onclick="setView('table')">仅表格</button>
-                <button class="view-btn" onclick="setView('kanban')">仅看板</button>
+                <button class="view-btn active" onclick="setView('both', this)">双栏</button>
+                <button class="view-btn" onclick="setView('table', this)">仅表格</button>
+                <button class="view-btn" onclick="setView('kanban', this)">仅看板</button>
               </div>
             </div>
             <div class="filter-bar">
@@ -344,7 +344,7 @@
 
       <!-- Settings Tab -->
       <div id="tab-settings" class="tab-content" style="width:100%">
-        <div style="padding:20px; max-width:600px">
+        <div style="padding:20px; max-width:600px; overflow-y:auto; height:calc(100vh - 120px)">
           <div class="panel-header">
             <div class="panel-title">系统设置</div>
           </div>
@@ -437,6 +437,17 @@
         <button class="btn btn-secondary" onclick="closeImportModal()">取消</button>
         <button class="btn btn-primary" onclick="processImport()">导入</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" id="detail-modal">
+    <div class="modal" style="max-width:700px">
+      <div class="modal-header">
+        <div class="panel-title" id="detail-modal-title">详情</div>
+        <button class="btn btn-icon" onclick="closeDetailModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" id="detail-modal-body"></div>
     </div>
   </div>
 
@@ -549,6 +560,7 @@
               <div class="kanban-card-meta">${h.source} · 权重${h.weight}</div>
               <div class="kanban-card-footer">
                 <div>${getPlatformDots(h.platforms)}</div>
+                <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); revertStatus(${h.id})"><i class="fas fa-arrow-left"></i></button>
                 <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); advanceStatus(${h.id})"><i class="fas fa-arrow-right"></i></button>
               </div>
               <div class="progress-bar"><div class="progress-fill" style="width:${getProgress(h.id)}%"></div></div>
@@ -608,10 +620,10 @@
       if (tab === 'settings') renderSettings();
     }
 
-    function setView(view) {
+    function setView(view, btn) {
       currentView = view;
       document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-      event.target.classList.add('active');
+      if (btn) btn.classList.add('active');
       
       const table = document.querySelector('.left-panel');
       const kanban = document.getElementById('kanban-panel');
@@ -626,6 +638,7 @@
         table.style.display = 'none';
         kanban.style.display = '';
       }
+      renderHotspots();
     }
 
     function openRewrite(id) {
@@ -708,6 +721,18 @@
         saveData();
         renderHotspots();
         if (h.status === 'published') showToast('已标记为发布');
+      }
+    }
+
+    function revertStatus(id) {
+      const h = data.hotspots.find(h => h.id === id);
+      if (!h) return;
+      const flow = ['pending', 'selected', 'rewriting', 'published'];
+      const idx = flow.indexOf(h.status);
+      if (idx > 0) {
+        h.status = flow[idx - 1];
+        saveData();
+        renderHotspots();
       }
     }
 
@@ -949,7 +974,7 @@
         const h = data.hotspots.find(h => h.id === t.hotspot_id);
         return `
           <tr>
-            <td class="font-medium">${t.title || h?.title || ''}</td>
+            <td><span class="text-sm text-textMuted cursor-pointer text-primary hover:underline" onclick="openDetail('topic', ${t.id})">${t.title || h?.title || ''}</span></td>
             <td><span class="text-sm text-textMuted">${h?.title?.substring(0, 30) || ''}...</span></td>
             <td>${t.priority === 'high' ? '<span class="px-2 py-1 text-xs bg-danger/10 text-danger rounded">高</span>' : t.priority === 'low' ? '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">低</span>' : '<span class="px-2 py-1 text-xs bg-warning/10 text-warning rounded">中</span>'}</td>
             <td class="text-sm text-textMuted">${t.note || '-'}</td>
@@ -975,7 +1000,7 @@
         return `
           <div class="bg-white border border-border rounded p-4">
             <div class="flex justify-between items-start mb-2">
-              <span class="font-medium text-sm">${r.direction}</span>
+              <span class="font-medium text-sm cursor-pointer text-primary hover:underline" onclick="openDetail('rewrite', ${r.id})">${r.direction}</span>
               <span class="text-xs text-textMuted">${r.created_at}</span>
             </div>
             <div class="text-sm text-textBody mb-2 line-clamp-2">${r.content || '（内容待补充）'}</div>
@@ -998,7 +1023,7 @@
       const tbody = document.getElementById('publish-tbody');
       tbody.innerHTML = data.publishes.map(p => `
         <tr>
-          <td class="font-medium">${p.content_id || p.id}</td>
+          <td><span class="font-medium cursor-pointer text-primary hover:underline" onclick="openDetail('publish', ${p.id})">${p.content_id || p.id}</span></td>
           <td><span class="platform-tag platform-wechat">${p.platform}</span></td>
           <td class="text-sm text-textMuted">${p.published_at}</td>
           <td>${p.status === 'success' ? '<span class="px-2 py-1 text-xs bg-success/10 text-success rounded">成功</span>' : '<span class="px-2 py-1 text-xs bg-warning/10 text-warning rounded">失败</span>'}</td>
@@ -1012,13 +1037,89 @@
       const allContent = [...data.hotspots, ...data.topics, ...data.rewritings, ...data.publishes];
       grid.innerHTML = allContent.slice(0, 12).map(item => `
         <div class="bg-white border border-border rounded p-4">
-          <div class="text-sm font-medium mb-1">${item.title || item.direction || item.platform || '未命名'}</div>
+          <div class="text-sm font-medium mb-1 cursor-pointer text-primary hover:underline" onclick="openDetail('library', ${item.id})">${item.title || item.direction || item.platform || '未命名'}</div>
           <div class="text-xs text-textMuted">${item.created_at || ''}</div>
         </div>
       `).join('') || '<div class="col-span-3 empty-state"><i class="fas fa-archive"></i><div>内容库为空</div></div>';
     }
 
     // Toast
+    // Detail Modal
+    function openDetail(type, id) {
+      let title = '', body = '';
+      if (type === 'topic') {
+        const t = data.topics.find(x => x.id === id);
+        if (!t) return;
+        const h = data.hotspots.find(x => x.id === t.hotspot_id);
+        title = t.title || h?.title || '选题详情';
+        body = `
+          <div class="space-y-3">
+            <div><strong>来源热点：</strong><span class="text-sm text-textMuted">${h?.title || '未知热点'}</span></div>
+            <div><strong>来源：</strong><span class="text-sm text-textMuted">${h?.source || '-'}</span></div>
+            <div><strong>类别：</strong><span class="text-sm text-textMuted">${h?.category || '-'}</span></div>
+            <div><strong>权重：</strong><span class="text-sm text-textMuted">${h?.weight ?? '-'}</span></div>
+            <div><strong>优先级：</strong><span class="text-sm text-textMuted">${t.priority || '中'}</span></div>
+            <div><strong>备注：</strong><span class="text-sm text-textMuted">${t.note || '无'}</span></div>
+            <div><strong>创建时间：</strong><span class="text-sm text-textMuted">${t.created_at}</span></div>
+            ${h ? `<div class="mt-3"><strong>热点状态：</strong>${getStatusBadge(h.status)} 平台：${getPlatformDots(h.platforms)}</div>` : ''}
+          </div>`;
+      } else if (type === 'rewrite') {
+        const r = data.rewritings.find(x => x.id === id);
+        if (!r) return;
+        const h = data.hotspots.find(x => x.id === r.hotspot_id);
+        title = `改写：${r.direction}`;
+        body = `
+          <div class="space-y-3">
+            <div><strong>原文标题：</strong><span class="text-sm text-textMuted">${h?.title || '-'}</span></div>
+            <div><strong>分发平台：</strong>${getPlatformDots(r.platforms)}</div>
+            <div class="mt-2"><strong>改写内容：</strong>
+              <div class="mt-1 p-3 bg-paper border border-border rounded text-sm text-textBody whitespace-pre-wrap">${r.content || '（内容待补充）'}</div>
+            </div>
+            ${r.note ? `<div><strong>备注：</strong><span class="text-sm text-textMuted">${r.note}</span></div>` : ''}
+            <div><strong>创建时间：</strong><span class="text-sm text-textMuted">${r.created_at}</span></div>
+          </div>`;
+      } else if (type === 'publish') {
+        const p = data.publishes.find(x => x.id === id);
+        if (!p) return;
+        title = `发布记录 · ${p.platform}`;
+        body = `
+          <div class="space-y-3">
+            <div><strong>内容 ID：</strong><span class="text-sm text-textMuted">${p.content_id || p.id}</span></div>
+            <div><strong>平台：</strong><span class="platform-tag platform-wechat">${p.platform}</span></div>
+            <div><strong>状态：</strong>${p.status === 'success' ? '✅ 成功' : '⚠️ 失败'}</div>
+            <div><strong>发布时间：</strong><span class="text-sm text-textMuted">${p.published_at}</span></div>
+            ${p.url ? `<div><strong>链接：</strong><a href="${p.url}" target="_blank" class="text-primary hover:underline">${p.url}</a></div>` : ''}
+          </div>`;
+      } else if (type === 'library') {
+        const item = data.hotspots.find(x => x.id === id)
+          || data.topics.find(x => x.id === id)
+          || data.rewritings.find(x => x.id === id)
+          || data.publishes.find(x => x.id === id);
+        if (!item) return;
+        title = item.title || item.direction || item.platform || '内容详情';
+        body = `
+          <div class="space-y-3">
+            <div><strong>标题：</strong><span class="text-sm text-textMuted">${item.title || '-'}</span></div>
+            ${item.source ? `<div><strong>来源：</strong><span class="text-sm text-textMuted">${item.source}</span></div>` : ''}
+            ${item.category ? `<div><strong>类别：</strong><span class="text-sm text-textMuted">${item.category}</span></div>` : ''}
+            ${item.weight != null ? `<div><strong>权重：</strong><span class="text-sm text-textMuted">${item.weight}</span></div>` : ''}
+            ${item.direction ? `<div><strong>改写方向：</strong><span class="text-sm text-textMuted">${item.direction}</span></div>` : ''}
+            ${item.platform ? `<div><strong>平台：</strong><span class="platform-tag platform-wechat">${item.platform}</span></div>` : ''}
+            ${item.status ? `<div><strong>状态：</strong>${getStatusBadge(item.status)}</div>` : ''}
+            ${item.note ? `<div><strong>备注：</strong><span class="text-sm text-textMuted">${item.note}</span></div>` : ''}
+            ${item.content ? `<div class="mt-2"><strong>内容：</strong><div class="mt-1 p-3 bg-paper border border-border rounded text-sm text-textBody whitespace-pre-wrap">${item.content}</div></div>` : ''}
+            ${item.created_at ? `<div><strong>创建时间：</strong><span class="text-sm text-textMuted">${item.created_at}</span></div>` : ''}
+          </div>`;
+      }
+      document.getElementById('detail-modal-title').textContent = title;
+      document.getElementById('detail-modal-body').innerHTML = body;
+      document.getElementById('detail-modal').classList.add('open');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detail-modal').classList.remove('open');
+    }
+
     function showToast(msg, type = 'success') {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
