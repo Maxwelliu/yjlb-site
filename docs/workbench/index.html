@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>内容工厂工作台 - 硬件老兵学AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1A56DB',
+            primaryDark: '#1e40af',
+            success: '#059669',
+            warning: '#B8860B',
+            danger: '#8B3A3A',
+            info: '#4A6B8A',
+            paper: '#F5F0E6',
+            parchment: '#EDE6D6',
+            border: '#C4B8A5',
+            textMain: '#2C2416',
+            textBody: '#4A3F35',
+            textMuted: '#8C7E6B'
+          },
+          fontFamily: {
+            serif: ['Georgia', 'Noto Serif SC', 'serif'],
+            mono: ['Courier New', 'monospace'],
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #4A3F35;
+      background: #F8F9FA;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+    .sidebar { width: 220px; min-height: 100vh; background: #1A56DB; position: fixed; left: 0; top: 0; z-index: 100; }
+    .sidebar-logo { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-nav { padding: 12px 0; }
+    .nav-item { display: flex; align-items: center; padding: 12px 20px; color: rgba(255,255,255,0.8); cursor: pointer; transition: all 0.2s; }
+    .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+    .nav-item.active { border-left: 3px solid #F5F0E6; }
+    .nav-item i { width: 24px; margin-right: 12px; }
+    .main-content { margin-left: 220px; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+    .kpi-row { background: #F5F0E6; padding: 16px 24px; border-bottom: 1px solid #C4B8A5; }
+    .kpi-card { background: white; border: 1px solid #C4B8A5; border-radius: 2px; padding: 16px 20px; min-width: 180px; }
+    .kpi-value { font-size: 28px; font-weight: 600; color: #1A56DB; font-family: 'Courier New', monospace; }
+    .kpi-label { font-size: 13px; color: #8C7E6B; margin-top: 4px; }
+    .kpi-change { font-size: 12px; margin-top: 4px; }
+    .kpi-change.up { color: #059669; }
+    .kpi-change.down { color: #8B3A3A; }
+    .content-area { flex: 1; overflow: hidden; display: flex; }
+    .left-panel { flex: 1; overflow: auto; padding: 20px; }
+    .right-panel { width: 400px; border-left: 1px solid #C4B8A5; overflow: auto; padding: 20px; background: white; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .panel-title { font-size: 16px; font-weight: 600; color: #2C2416; font-family: Georgia, serif; }
+    .table-container { background: white; border: 1px solid #C4B8A5; border-radius: 2px; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { background: #EDE6D6; padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 600; color: #4A3F35; border-bottom: 1px solid #C4B8A5; position: sticky; top: 0; }
+    .data-table td { padding: 10px 12px; border-bottom: 1px solid #f0ebe1; font-size: 14px; }
+    .data-table tr:hover { background: #faf8f3; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .btn { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 2px; font-size: 13px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
+    .btn-primary { background: #1A56DB; color: white; }
+    .btn-primary:hover { background: #1e40af; }
+    .btn-secondary { background: white; color: #4A3F35; border-color: #C4B8A5; }
+    .btn-secondary:hover { background: #F5F0E6; }
+    .btn-sm { padding: 4px 8px; font-size: 12px; }
+    .btn-icon { padding: 6px 8px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+    .status-published { background: #059669; }
+    .status-draft { background: #B8860B; }
+    .status-pending { background: #8C7E6B; }
+    .platform-tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 2px; font-size: 12px; margin-right: 4px; }
+    .platform-wechat { background: #059669; color: white; }
+    .platform-toutiao { background: #FF6B35; color: white; }
+    .platform-baijiahao { background: #4A6B8A; color: white; }
+    .platform-xiaohongshu { background: #DE2747; color: white; }
+    .kanban-board { display: flex; gap: 12px; min-height: 100%; }
+    .kanban-column { flex: 1; min-width: 150px; background: #F5F0E6; border-radius: 2px; padding: 12px; }
+    .kanban-column-header { font-size: 13px; font-weight: 600; color: #4A3F35; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #1A56DB; display: flex; justify-content: space-between; align-items: center; }
+    .kanban-count { background: #1A56DB; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+    .kanban-card { background: white; border: 1px solid #C4B8A5; border-radius: 2px; padding: 12px; margin-bottom: 8px; cursor: move; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .kanban-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .kanban-card-title { font-size: 13px; font-weight: 600; color: #2C2416; margin-bottom: 6px; line-height: 1.4; }
+    .kanban-card-meta { font-size: 11px; color: #8C7E6B; margin-bottom: 8px; }
+    .kanban-card-footer { display: flex; justify-content: space-between; align-items: center; }
+    .progress-bar { height: 4px; background: #E5E0D6; border-radius: 2px; overflow: hidden; margin-top: 8px; }
+    .progress-fill { height: 100%; background: #059669; transition: width 0.3s; }
+    .drawer { position: fixed; right: -500px; top: 0; width: 500px; height: 100vh; background: white; box-shadow: -2px 0 8px rgba(0,0,0,0.1); z-index: 200; transition: right 0.3s; display: flex; flex-direction: column; }
+    .drawer.open { right: 0; }
+    .drawer-header { padding: 20px; border-bottom: 1px solid #C4B8A5; display: flex; justify-content: space-between; align-items: center; }
+    .drawer-body { flex: 1; overflow: auto; padding: 20px; }
+    .drawer-footer { padding: 16px 20px; border-top: 1px solid #C4B8A5; display: flex; justify-content: flex-end; gap: 8px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: #4A3F35; margin-bottom: 6px; }
+    .form-input, .form-select, .form-textarea { width: 100%; padding: 8px 12px; border: 1px solid #C4B8A5; border-radius: 2px; font-size: 14px; background: white; color: #4A3F35; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: #1A56DB; box-shadow: 0 0 0 2px rgba(26,86,219,0.1); }
+    .form-textarea { min-height: 120px; resize: vertical; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(44,36,22,0.5); z-index: 300; display: none; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; border-radius: 4px; max-width: 600px; width: 90%; max-height: 80vh; overflow: auto; }
+    .modal-header { padding: 16px 20px; border-bottom: 1px solid #C4B8A5; display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { padding: 20px; }
+    .modal-footer { padding: 16px 20px; border-top: 1px solid #C4B8A5; display: flex; justify-content: flex-end; gap: 8px; }
+    .toast { position: fixed; top: 20px; right: 20px; background: #1A56DB; color: white; padding: 12px 20px; border-radius: 2px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 400; animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .empty-state { text-align: center; padding: 60px 20px; color: #8C7E6B; }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+    .filter-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-bar input, .filter-bar select { padding: 6px 12px; border: 1px solid #C4B8A5; border-radius: 2px; font-size: 13px; }
+    .view-toggle { display: flex; gap: 4px; background: #EDE6D6; padding: 4px; border-radius: 2px; }
+    .view-btn { padding: 6px 12px; border: none; background: transparent; cursor: pointer; border-radius: 2px; font-size: 13px; color: #4A3F35; }
+    .view-btn.active { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="text-white font-serif text-lg font-semibold">内容工厂</div>
+      <div class="text-white/60 text-xs mt-1">硬件老兵学AI</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-tab="hotspots" onclick="switchTab('hotspots')">
+        <i class="fas fa-newspaper"></i>
+        <span>热点看板</span>
+      </div>
+      <div class="nav-item" data-tab="topics" onclick="switchTab('topics')">
+        <i class="fas fa-filter"></i>
+        <span>选题管理</span>
+      </div>
+      <div class="nav-item" data-tab="rewrite" onclick="switchTab('rewrite')">
+        <i class="fas fa-pen-fancy"></i>
+        <span>改写工作台</span>
+      </div>
+      <div class="nav-item" data-tab="publish" onclick="switchTab('publish')">
+        <i class="fas fa-share-alt"></i>
+        <span>发布记录</span>
+      </div>
+      <div class="nav-item" data-tab="library" onclick="switchTab('library')">
+        <i class="fas fa-archive"></i>
+        <span>内容库</span>
+      </div>
+      <div class="nav-item" data-tab="settings" onclick="switchTab('settings')">
+        <i class="fas fa-cog"></i>
+        <span>系统设置</span>
+      </div>
+    </nav>
+    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+      <div class="text-white/60 text-xs">v1.0.0 · localStorage</div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- KPI Row -->
+    <div class="kpi-row">
+      <div class="flex gap-6">
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-hotspots">0</div>
+          <div class="kpi-label">今日热点</div>
+          <div class="kpi-change up" id="kpi-hotspots-change">↑ 0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-selection">0%</div>
+          <div class="kpi-label">筛选率</div>
+          <div class="kpi-change up">昨日 78%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-rewrite">0%</div>
+          <div class="kpi-label">改写完成率</div>
+          <div class="kpi-change up">↑ 5%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-publish">0%</div>
+          <div class="kpi-label">发布成功率</div>
+          <div class="kpi-change up">本月 95%</div>
+        </div>
+        <div class="kpi-card ml-auto">
+          <div class="kpi-value" id="kpi-platforms">4</div>
+          <div class="kpi-label">分发平台</div>
+          <div class="kpi-change">微信/头条/百家号/小红书</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Contents -->
+    <div class="content-area">
+      <!-- Hotspots Tab -->
+      <div id="tab-hotspots" class="tab-content active" style="width:100%">
+        <div class="flex h-full">
+          <!-- Left: Table -->
+          <div class="left-panel">
+            <div class="panel-header">
+              <div class="panel-title">热点看板</div>
+              <div class="view-toggle">
+                <button class="view-btn active" onclick="setView('both')">双栏</button>
+                <button class="view-btn" onclick="setView('table')">仅表格</button>
+                <button class="view-btn" onclick="setView('kanban')">仅看板</button>
+              </div>
+            </div>
+            <div class="filter-bar">
+              <input type="text" id="filter-search" placeholder="搜索标题/来源..." oninput="renderHotspots()">
+              <select id="filter-category" onchange="renderHotspots()">
+                <option value="">全部分类</option>
+                <option value="AI模型">AI模型</option>
+                <option value="AI产品">AI产品</option>
+                <option value="机器人">机器人</option>
+                <option value="大牛观点">大牛观点</option>
+              </select>
+              <select id="filter-status" onchange="renderHotspots()">
+                <option value="">全部状态</option>
+                <option value="pending">待筛选</option>
+                <option value="selected">已选中</option>
+                <option value="rewriting">改写中</option>
+                <option value="published">已发布</option>
+              </select>
+              <button class="btn btn-primary" onclick="openImportModal()">
+                <i class="fas fa-file-import mr-2"></i>导入热点
+              </button>
+              <button class="btn btn-secondary" onclick="exportHotspots()">
+                <i class="fas fa-file-export mr-2"></i>导出
+              </button>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>标题</th>
+                    <th>来源</th>
+                    <th>类别</th>
+                    <th>权重</th>
+                    <th>状态</th>
+                    <th>平台</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="hotspots-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <!-- Right: Kanban -->
+          <div class="right-panel" id="kanban-panel" style="display:none">
+            <div class="panel-header">
+              <div class="panel-title">选题流水线</div>
+            </div>
+            <div class="kanban-board" id="kanban-board"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Topics Tab -->
+      <div id="tab-topics" class="tab-content" style="width:100%">
+        <div style="padding:20px">
+          <div class="panel-header">
+            <div class="panel-title">选题管理</div>
+            <button class="btn btn-primary" onclick="exportTopics()">
+              <i class="fas fa-file-export mr-2"></i>导出选题
+            </button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>选题标题</th>
+                  <th>来源热点</th>
+                  <th>优先级</th>
+                  <th>备注</th>
+                  <th>创建时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="topics-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rewrite Tab -->
+      <div id="tab-rewrite" class="tab-content" style="width:100%">
+        <div style="padding:20px">
+          <div class="panel-header">
+            <div class="panel-title">改写工作台</div>
+          </div>
+          <div class="grid grid-cols-2 gap-4" id="rewrite-grid"></div>
+        </div>
+      </div>
+
+      <!-- Publish Tab -->
+      <div id="tab-publish" class="tab-content" style="width:100%">
+        <div style="padding:20px">
+          <div class="panel-header">
+            <div class="panel-title">发布记录</div>
+            <button class="btn btn-secondary" onclick="exportPublish()">
+              <i class="fas fa-file-export mr-2"></i>导出记录
+            </button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>内容标题</th>
+                  <th>平台</th>
+                  <th>发布时间</th>
+                  <th>状态</th>
+                  <th>链接</th>
+                </tr>
+              </thead>
+              <tbody id="publish-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Library Tab -->
+      <div id="tab-library" class="tab-content" style="width:100%">
+        <div style="padding:20px">
+          <div class="panel-header">
+            <div class="panel-title">内容库</div>
+            <div class="flex gap-2">
+              <button class="btn btn-secondary" onclick="exportLibrary()">
+                <i class="fas fa-download mr-2"></i>全量备份
+              </button>
+              <button class="btn btn-primary" onclick="document.getElementById('import-backup').click()">
+                <i class="fas fa-upload mr-2"></i>恢复备份
+              </button>
+              <input type="file" id="import-backup" accept=".json" style="display:none" onchange="importBackup(event)">
+            </div>
+          </div>
+          <div id="library-grid" class="grid grid-cols-3 gap-4"></div>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div id="tab-settings" class="tab-content" style="width:100%">
+        <div style="padding:20px; max-width:600px">
+          <div class="panel-header">
+            <div class="panel-title">系统设置</div>
+          </div>
+          <div class="space-y-6">
+            <div class="bg-white border border-border rounded p-4">
+              <h3 class="font-semibold mb-4">分类管理</h3>
+              <div id="categories-list" class="space-y-2"></div>
+              <button class="btn btn-secondary mt-4" onclick="addCategory()">+ 添加分类</button>
+            </div>
+            <div class="bg-white border border-border rounded p-4">
+              <h3 class="font-semibold mb-4">标签管理</h3>
+              <div id="tags-list" class="space-y-2"></div>
+              <button class="btn btn-secondary mt-4" onclick="addTag()">+ 添加标签</button>
+            </div>
+            <div class="bg-white border border-border rounded p-4">
+              <h3 class="font-semibold mb-4">平台配置</h3>
+              <div id="platforms-list" class="space-y-2"></div>
+              <button class="btn btn-secondary mt-4" onclick="addPlatform()">+ 添加平台</button>
+            </div>
+            <div class="bg-white border border-border rounded p-4">
+              <h3 class="font-semibold mb-4">数据管理</h3>
+              <div class="flex gap-2">
+                <button class="btn btn-secondary" onclick="clearAllData()">清空所有数据</button>
+                <button class="btn btn-danger" onclick="resetDemoData()">重置为演示数据</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Rewrite Drawer -->
+  <div class="drawer" id="rewrite-drawer">
+    <div class="drawer-header">
+      <div class="panel-title">改写工作台</div>
+      <button class="btn btn-icon" onclick="closeDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+      <div class="form-group">
+        <label class="form-label">原文标题</label>
+        <input type="text" id="drawer-original-title" class="form-input" readonly>
+      </div>
+      <div class="form-group">
+        <label class="form-label">改写方向</label>
+        <select id="drawer-direction" class="form-select">
+          <option value="公众号长文">公众号长文</option>
+          <option value="快讯短文">快讯短文</option>
+          <option value="小红书">小红书</option>
+          <option value="知乎回答">知乎回答</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">改写内容</label>
+        <textarea id="drawer-content" class="form-textarea" placeholder="在此输入或粘贴改写后的内容..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">分发平台</label>
+        <div id="drawer-platforms" class="flex flex-wrap gap-2"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <input type="text" id="drawer-note" class="form-input" placeholder="可选备注...">
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" onclick="closeDrawer()">取消</button>
+      <button class="btn btn-primary" onclick="saveRewrite()">保存改写</button>
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div class="modal-overlay" id="import-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="panel-title">导入热点数据</div>
+        <button class="btn btn-icon" onclick="closeImportModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">上传文件 (JSON/CSV)</label>
+          <input type="file" id="import-file" accept=".json,.csv" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">或粘贴数据</label>
+          <textarea id="import-text" class="form-textarea" placeholder='[{"title":"...","source":"...","category":"...","weight":5}]'></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeImportModal()">取消</button>
+        <button class="btn btn-primary" onclick="processImport()">导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <script>
+    // Data Store
+    const STORAGE_KEY = 'content_factory_data';
+    let data = {
+      hotspots: [],
+      topics: [],
+      rewritings: [],
+      publishes: [],
+      categories: ['AI模型', 'AI产品', '机器人', '大牛观点'],
+      tags: ['爆款潜力', '已改写', '待发布'],
+      platforms: ['公众号', '头条', '百家号', '小红书']
+    };
+    let currentRewriteId = null;
+    let currentView = 'both';
+
+    // Load data
+    function loadData() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        data = JSON.parse(saved);
+      } else {
+        loadDemoData();
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      updateKPI();
+    }
+
+    function loadDemoData() {
+      const today = new Date().toISOString().split('T')[0];
+      data.hotspots = [
+        { id: 1, title: 'OpenAI GPT-5 发布， multimodal 能力升级', source: 'OpenAI Blog', category: 'AI模型', weight: 9, status: 'published', platforms: ['公众号', '头条'], created_at: today },
+        { id: 2, title: 'NVIDIA 发布新一代 AI 芯片 Blackwell Ultra', source: 'NVIDIA News', category: 'AI硬件', weight: 8, status: 'selected', platforms: ['公众号'], created_at: today },
+        { id: 3, title: '字节跳动 AI 短剧出海平台 Seko 上线', source: '36氪', category: 'AI产品', weight: 7, status: 'pending', platforms: [], created_at: today },
+        { id: 4, title: '清华 AIR 发布 Zeva 具身自进化机器人', source: '新智元', category: '机器人', weight: 8, status: 'rewriting', platforms: ['公众号', '小红书'], created_at: today },
+        { id: 5, title: '马斯克谈 AGI 时间线预测', source: 'X/Twitter', category: '大牛观点', weight: 6, status: 'pending', platforms: [], created_at: today },
+      ];
+      data.topics = [
+        { id: 1, hotspot_id: 1, title: 'GPT-5 深度评测', priority: 'high', note: '适合公众号长文', created_at: today },
+        { id: 2, hotspot_id: 4, title: '清华具身自进化新范式', priority: 'high', note: '对比 Novus', created_at: today },
+      ];
+      data.rewritings = [
+        { id: 1, topic_id: 1, direction: '公众号长文', content: '...', platforms: ['公众号'], note: '', created_at: today },
+      ];
+      data.publishes = [
+        { id: 1, content_id: 1, platform: '公众号', published_at: today, status: 'success', url: 'https://mp.weixin.qq.com/...' },
+      ];
+      saveData();
+    }
+
+    // Render functions
+    function renderHotspots() {
+      const search = document.getElementById('filter-search').value.toLowerCase();
+      const category = document.getElementById('filter-category').value;
+      const status = document.getElementById('filter-status').value;
+      
+      let filtered = data.hotspots.filter(h => {
+        if (search && !h.title.toLowerCase().includes(search) && !h.source.toLowerCase().includes(search)) return false;
+        if (category && h.category !== category) return false;
+        if (status && h.status !== status) return false;
+        return true;
+      });
+
+      const tbody = document.getElementById('hotspots-tbody');
+      tbody.innerHTML = filtered.map(h => `
+        <tr>
+          <td class="font-medium">${h.title}</td>
+          <td><span class="text-sm text-textMuted">${h.source}</span></td>
+          <td><span class="badge text-xs px-2 py-1 bg-paper border border-border">${h.category}</span></td>
+          <td><div class="flex items-center gap-1"><div class="w-16 h-2 bg-border rounded-full"><div class="h-full bg-primary rounded-full" style="width:${h.weight*10}%"></div></div><span class="text-xs text-textMuted">${h.weight}</span></div></td>
+          <td>${getStatusBadge(h.status)}</td>
+          <td>${getPlatformDots(h.platforms)}</td>
+          <td>
+            <button class="btn btn-sm btn-secondary mr-1" onclick="selectTopic(${h.id})"><i class="fas fa-filter"></i></button>
+            <button class="btn btn-sm btn-primary" onclick="openRewrite(${h.id})"><i class="fas fa-pen"></i></button>
+            <button class="btn btn-sm btn-secondary" onclick="deleteHotspot(${h.id})"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+
+      renderKanban();
+    }
+
+    function renderKanban() {
+      const board = document.getElementById('kanban-board');
+      const columns = [
+        { key: 'pending', label: '待筛选', count: data.hotspots.filter(h => h.status === 'pending').length },
+        { key: 'selected', label: '筛选中', count: data.hotspots.filter(h => h.status === 'selected').length },
+        { key: 'rewriting', label: '改写中', count: data.hotspots.filter(h => h.status === 'rewriting').length },
+        { key: 'published', label: '已发布', count: data.hotspots.filter(h => h.status === 'published').length }
+      ];
+
+      board.innerHTML = columns.map(col => `
+        <div class="kanban-column">
+          <div class="kanban-column-header">
+            <span>${col.label}</span>
+            <span class="kanban-count">${col.count}</span>
+          </div>
+          ${data.hotspots.filter(h => h.status === col.key).map(h => `
+            <div class="kanban-card" onclick="openRewrite(${h.id})">
+              <div class="kanban-card-title">${h.title.substring(0, 40)}...</div>
+              <div class="kanban-card-meta">${h.source} · 权重${h.weight}</div>
+              <div class="kanban-card-footer">
+                <div>${getPlatformDots(h.platforms)}</div>
+                <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); advanceStatus(${h.id})"><i class="fas fa-arrow-right"></i></button>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${getProgress(h.id)}%"></div></div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
+    function getProgress(id) {
+      const h = data.hotspots.find(h => h.id === id);
+      if (!h) return 0;
+      const map = { pending: 0, selected: 25, rewriting: 50, published: 100 };
+      return map[h.status] || 0;
+    }
+
+    function getStatusBadge(status) {
+      const map = {
+        pending: '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">待筛选</span>',
+        selected: '<span class="px-2 py-1 text-xs bg-warning/10 text-warning rounded">已选中</span>',
+        rewriting: '<span class="px-2 py-1 text-xs bg-primary/10 text-primary rounded">改写中</span>',
+        published: '<span class="px-2 py-1 text-xs bg-success/10 text-success rounded">已发布</span>'
+      };
+      return map[status] || status;
+    }
+
+    function getPlatformDots(platforms) {
+      if (!platforms || platforms.length === 0) return '<span class="text-xs text-textMuted">-</span>';
+      return platforms.map(p => {
+        const cls = { '公众号': 'platform-wechat', '头条': 'platform-toutiao', '百家号': 'platform-baijiahao', '小红书': 'platform-xiaohongshu' };
+        return `<span class="platform-tag ${cls[p] || ''}">${p}</span>`;
+      }).join('');
+    }
+
+    function updateKPI() {
+      const today = new Date().toISOString().split('T')[0];
+      const todayHotspots = data.hotspots.filter(h => h.created_at === today);
+      const published = data.hotspots.filter(h => h.status === 'published').length;
+      
+      document.getElementById('kpi-hotspots').textContent = todayHotspots.length;
+      document.getElementById('kpi-selection').textContent = todayHotspots.length > 0 ? Math.round((todayHotspots.filter(h => h.status === 'selected' || h.status === 'rewriting' || h.status === 'published').length / todayHotspots.length) * 100) + '%' : '0%';
+      document.getElementById('kpi-rewrite').textContent = todayHotspots.length > 0 ? Math.round((todayHotspots.filter(h => h.status === 'rewriting' || h.status === 'published').length / todayHotspots.length) * 100) + '%' : '0%';
+      document.getElementById('kpi-publish').textContent = published > 0 ? '100%' : '0%';
+    }
+
+    // Actions
+    function switchTab(tab) {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.nav-item[data-tab="${tab}"]`).classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      
+      if (tab === 'topics') renderTopics();
+      if (tab === 'rewrite') renderRewrite();
+      if (tab === 'publish') renderPublish();
+      if (tab === 'library') renderLibrary();
+      if (tab === 'settings') renderSettings();
+    }
+
+    function setView(view) {
+      currentView = view;
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      const table = document.querySelector('.left-panel');
+      const kanban = document.getElementById('kanban-panel');
+      
+      if (view === 'both') {
+        table.style.display = '';
+        kanban.style.display = '';
+      } else if (view === 'table') {
+        table.style.display = '';
+        kanban.style.display = 'none';
+      } else {
+        table.style.display = 'none';
+        kanban.style.display = '';
+      }
+    }
+
+    function openRewrite(id) {
+      const h = data.hotspots.find(h => h.id === id);
+      if (!h) return;
+      currentRewriteId = id;
+      document.getElementById('drawer-original-title').value = h.title;
+      document.getElementById('drawer-content').value = '';
+      document.getElementById('drawer-note').value = '';
+      renderDrawerPlatforms(h.platforms);
+      document.getElementById('rewrite-drawer').classList.add('open');
+    }
+
+    function renderDrawerPlatforms(selected) {
+      const container = document.getElementById('drawer-platforms');
+      container.innerHTML = data.platforms.map(p => `
+        <label class="flex items-center gap-2 px-3 py-2 border border-border rounded cursor-pointer hover:bg-paper">
+          <input type="checkbox" value="${p}" ${selected && selected.includes(p) ? 'checked' : ''} class="platform-checkbox">
+          <span>${p}</span>
+        </label>
+      `).join('');
+    }
+
+    function closeDrawer() {
+      document.getElementById('rewrite-drawer').classList.remove('open');
+      currentRewriteId = null;
+    }
+
+    function saveRewrite() {
+      if (!currentRewriteId) return;
+      const selectedPlatforms = Array.from(document.querySelectorAll('.platform-checkbox:checked')).map(c => c.value);
+      const content = document.getElementById('drawer-content').value;
+      const note = document.getElementById('drawer-note').value;
+      const direction = document.getElementById('drawer-direction').value;
+      
+      // Update hotspot status
+      const h = data.hotspots.find(h => h.id === currentRewriteId);
+      if (h) {
+        h.platforms = selectedPlatforms;
+        h.status = 'rewriting';
+      }
+      
+      // Add rewriting record
+      const rewriting = {
+        id: Date.now(),
+        hotspot_id: currentRewriteId,
+        direction,
+        content,
+        platforms: selectedPlatforms,
+        note,
+        created_at: new Date().toISOString()
+      };
+      data.rewritings.push(rewriting);
+      
+      // Add topic if not exists
+      if (!data.topics.find(t => t.hotspot_id === currentRewriteId)) {
+        data.topics.push({
+          id: Date.now(),
+          hotspot_id: currentRewriteId,
+          title: h?.title || '',
+          priority: 'medium',
+          note,
+          created_at: new Date().toISOString()
+        });
+      }
+      
+      saveData();
+      renderHotspots();
+      closeDrawer();
+      showToast('改写已保存');
+    }
+
+    function advanceStatus(id) {
+      const h = data.hotspots.find(h => h.id === id);
+      if (!h) return;
+      const flow = ['pending', 'selected', 'rewriting', 'published'];
+      const idx = flow.indexOf(h.status);
+      if (idx < flow.length - 1) {
+        h.status = flow[idx + 1];
+        saveData();
+        renderHotspots();
+        if (h.status === 'published') showToast('已标记为发布');
+      }
+    }
+
+    function selectTopic(id) {
+      const h = data.hotspots.find(h => h.id === id);
+      if (!h) return;
+      h.status = 'selected';
+      if (!data.topics.find(t => t.hotspot_id === id)) {
+        data.topics.push({
+          id: Date.now(),
+          hotspot_id: id,
+          title: h.title,
+          priority: 'medium',
+          note: '',
+          created_at: new Date().toISOString()
+        });
+      }
+      saveData();
+      renderHotspots();
+      showToast('已加入选题');
+    }
+
+    function deleteHotspot(id) {
+      if (!confirm('确定删除这条热点？')) return;
+      data.hotspots = data.hotspots.filter(h => h.id !== id);
+      saveData();
+      renderHotspots();
+      showToast('已删除');
+    }
+
+    // Import/Export
+    function openImportModal() {
+      document.getElementById('import-modal').classList.add('open');
+      document.getElementById('import-text').value = '';
+    }
+
+    function closeImportModal() {
+      document.getElementById('import-modal').classList.remove('open');
+    }
+
+    function processImport() {
+      const file = document.getElementById('import-file').files[0];
+      const text = document.getElementById('import-text').value;
+      
+      let parsed = null;
+      
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            parsed = JSON.parse(e.target.result);
+            if (Array.isArray(parsed)) addHotspots(parsed);
+          } catch (err) {
+            showToast('JSON 解析失败', 'error');
+          }
+        };
+        reader.readAsText(file);
+      } else if (text) {
+        try {
+          parsed = JSON.parse(text);
+          if (Array.isArray(parsed)) addHotspots(parsed);
+        } catch (err) {
+          showToast('JSON 解析失败', 'error');
+        }
+      }
+      
+      closeImportModal();
+    }
+
+    function addHotspots(items) {
+      const today = new Date().toISOString().split('T')[0];
+      const newItems = items.map((item, idx) => ({
+        id: Date.now() + idx,
+        title: item.title || item.name || '未命名',
+        source: item.source || '导入',
+        category: item.category || '其他',
+        weight: item.weight || 5,
+        status: 'pending',
+        platforms: [],
+        created_at: today
+      }));
+      data.hotspots = [...newItems, ...data.hotspots];
+      saveData();
+      renderHotspots();
+      showToast(`导入 ${newItems.length} 条热点`);
+    }
+
+    function exportHotspots() {
+      const blob = new Blob([JSON.stringify(data.hotspots, null, 2)], { type: 'application/json' });
+      downloadBlob(blob, `热点数据_${new Date().toISOString().split('T')[0]}.json`);
+    }
+
+    function exportTopics() {
+      const blob = new Blob([JSON.stringify(data.topics, null, 2)], { type: 'application/json' });
+      downloadBlob(blob, `选题列表_${new Date().toISOString().split('T')[0]}.json`);
+    }
+
+    function exportPublish() {
+      const blob = new Blob([JSON.stringify(data.publishes, null, 2)], { type: 'application/json' });
+      downloadBlob(blob, `发布记录_${new Date().toISOString().split('T')[0]}.json`);
+    }
+
+    function exportLibrary() {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      downloadBlob(blob, `内容工厂完整备份_${new Date().toISOString().split('T')[0]}.json`);
+    }
+
+    function importBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported.hotspots) {
+            data = imported;
+            saveData();
+            renderHotspots();
+            showToast('数据恢复成功');
+          }
+        } catch (err) {
+          showToast('备份文件解析失败', 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Settings
+    function renderSettings() {
+      renderCategories();
+      renderTags();
+      renderPlatforms();
+    }
+
+    function renderCategories() {
+      const container = document.getElementById('categories-list');
+      container.innerHTML = data.categories.map((c, i) => `
+        <div class="flex items-center gap-2">
+          <span class="flex-1 px-3 py-2 bg-paper border border-border rounded">${c}</span>
+          <button class="btn btn-sm btn-secondary" onclick="removeCategory(${i})"><i class="fas fa-times"></i></button>
+        </div>
+      `).join('');
+    }
+
+    function addCategory() {
+      const name = prompt('输入分类名称:');
+      if (name && !data.categories.includes(name)) {
+        data.categories.push(name);
+        saveData();
+        renderSettings();
+      }
+    }
+
+    function removeCategory(idx) {
+      data.categories.splice(idx, 1);
+      saveData();
+      renderSettings();
+    }
+
+    function renderTags() {
+      const container = document.getElementById('tags-list');
+      container.innerHTML = data.tags.map((t, i) => `
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-1 bg-primary/10 text-primary rounded text-sm">${t}</span>
+          <button class="btn btn-sm btn-secondary" onclick="removeTag(${i})"><i class="fas fa-times"></i></button>
+        </div>
+      `).join('');
+    }
+
+    function addTag() {
+      const name = prompt('输入标签名称:');
+      if (name && !data.tags.includes(name)) {
+        data.tags.push(name);
+        saveData();
+        renderSettings();
+      }
+    }
+
+    function removeTag(idx) {
+      data.tags.splice(idx, 1);
+      saveData();
+      renderSettings();
+    }
+
+    function renderPlatforms() {
+      const container = document.getElementById('platforms-list');
+      container.innerHTML = data.platforms.map((p, i) => `
+        <div class="flex items-center gap-2">
+          <span class="flex-1 px-3 py-2 bg-paper border border-border rounded">${p}</span>
+          <button class="btn btn-sm btn-secondary" onclick="removePlatform(${i})"><i class="fas fa-times"></i></button>
+        </div>
+      `).join('');
+    }
+
+    function addPlatform() {
+      const name = prompt('输入平台名称:');
+      if (name && !data.platforms.includes(name)) {
+        data.platforms.push(name);
+        saveData();
+        renderSettings();
+      }
+    }
+
+    function removePlatform(idx) {
+      data.platforms.splice(idx, 1);
+      saveData();
+      renderSettings();
+    }
+
+    function clearAllData() {
+      if (!confirm('确定清空所有数据？此操作不可恢复！')) return;
+      if (!confirm('再次确认：清空所有热点、选题、改写、发布记录？')) return;
+      data = { hotspots: [], topics: [], rewritings: [], publishes: [], categories: data.categories, tags: data.tags, platforms: data.platforms };
+      saveData();
+      renderHotspots();
+      showToast('数据已清空');
+    }
+
+    function resetDemoData() {
+      if (!confirm('重置为演示数据？当前数据将被覆盖。')) return;
+      loadDemoData();
+      renderHotspots();
+      showToast('已重置为演示数据');
+    }
+
+    // Other renders
+    function renderTopics() {
+      const tbody = document.getElementById('topics-tbody');
+      tbody.innerHTML = data.topics.map(t => {
+        const h = data.hotspots.find(h => h.id === t.hotspot_id);
+        return `
+          <tr>
+            <td class="font-medium">${t.title || h?.title || ''}</td>
+            <td><span class="text-sm text-textMuted">${h?.title?.substring(0, 30) || ''}...</span></td>
+            <td>${t.priority === 'high' ? '<span class="px-2 py-1 text-xs bg-danger/10 text-danger rounded">高</span>' : t.priority === 'low' ? '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">低</span>' : '<span class="px-2 py-1 text-xs bg-warning/10 text-warning rounded">中</span>'}</td>
+            <td class="text-sm text-textMuted">${t.note || '-'}</td>
+            <td class="text-sm text-textMuted">${t.created_at}</td>
+            <td>
+              <button class="btn btn-sm btn-secondary" onclick="deleteTopic(${t.id})"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('') || '<tr><td colspan="6" class="text-center py-8 text-textMuted">暂无选题</td></tr>';
+    }
+
+    function deleteTopic(id) {
+      data.topics = data.topics.filter(t => t.id !== id);
+      saveData();
+      renderTopics();
+    }
+
+    function renderRewrite() {
+      const grid = document.getElementById('rewrite-grid');
+      grid.innerHTML = data.rewritings.map(r => {
+        const h = data.hotspots.find(h => h.id === r.hotspot_id);
+        return `
+          <div class="bg-white border border-border rounded p-4">
+            <div class="flex justify-between items-start mb-2">
+              <span class="font-medium text-sm">${r.direction}</span>
+              <span class="text-xs text-textMuted">${r.created_at}</span>
+            </div>
+            <div class="text-sm text-textBody mb-2 line-clamp-2">${r.content || '（内容待补充）'}</div>
+            <div class="flex justify-between items-center">
+              ${getPlatformDots(r.platforms)}
+              <button class="btn btn-sm btn-secondary" onclick="deleteRewrite(${r.id})"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('') || '<div class="col-span-2 empty-state"><i class="fas fa-pen-fancy"></i><div>暂无改写记录</div></div>';
+    }
+
+    function deleteRewrite(id) {
+      data.rewritings = data.rewritings.filter(r => r.id !== id);
+      saveData();
+      renderRewrite();
+    }
+
+    function renderPublish() {
+      const tbody = document.getElementById('publish-tbody');
+      tbody.innerHTML = data.publishes.map(p => `
+        <tr>
+          <td class="font-medium">${p.content_id || p.id}</td>
+          <td><span class="platform-tag platform-wechat">${p.platform}</span></td>
+          <td class="text-sm text-textMuted">${p.published_at}</td>
+          <td>${p.status === 'success' ? '<span class="px-2 py-1 text-xs bg-success/10 text-success rounded">成功</span>' : '<span class="px-2 py-1 text-xs bg-warning/10 text-warning rounded">失败</span>'}</td>
+          <td><a href="${p.url || '#'}" target="_blank" class="text-primary hover:underline">${p.url ? '查看' : '-'}</a></td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" class="text-center py-8 text-textMuted">暂无发布记录</td></tr>';
+    }
+
+    function renderLibrary() {
+      const grid = document.getElementById('library-grid');
+      const allContent = [...data.hotspots, ...data.topics, ...data.rewritings, ...data.publishes];
+      grid.innerHTML = allContent.slice(0, 12).map(item => `
+        <div class="bg-white border border-border rounded p-4">
+          <div class="text-sm font-medium mb-1">${item.title || item.direction || item.platform || '未命名'}</div>
+          <div class="text-xs text-textMuted">${item.created_at || ''}</div>
+        </div>
+      `).join('') || '<div class="col-span-3 empty-state"><i class="fas fa-archive"></i><div>内容库为空</div></div>';
+    }
+
+    // Toast
+    function showToast(msg, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      if (type === 'error') toast.style.background = '#8B3A3A';
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Init
+    loadData();
+    renderHotspots();
+    updateKPI();
+  </script>
+</body>
+</html>
