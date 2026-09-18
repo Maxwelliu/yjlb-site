@@ -43,7 +43,7 @@
       overflow: hidden;
     }
     .sidebar { width: 220px; min-height: 100vh; background: #1A56DB; position: fixed; left: 0; top: 0; z-index: 100; }
-    .sidebar-logo { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); position: relative; }
     .sidebar-nav { padding: 12px 0; }
     .nav-item { display: flex; align-items: center; padding: 12px 20px; color: rgba(255,255,255,0.8); cursor: pointer; transition: all 0.2s; }
     .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
@@ -122,14 +122,87 @@
     .view-btn.active { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+
+    /* ── 移动端响应式 ── */
+    .sidebar-foot { position: absolute; bottom: 0; left: 0; right: 0; }
+    .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 90; display: none; }
+    .sidebar.expanded .sidebar-close i { transform: rotate(180deg); }
+    .mobile-header { display: none; }
+    .sidebar-close { display: none; }
+    .sidebar { transition: transform 0.25s ease; }
+    @media (max-width: 768px) {
+      /* 手机：整页允许自然滚动，替代桌面固定高度布局 */
+      body { overflow: auto; }
+      .main-content { height: auto; overflow: visible; }
+      .content-area { overflow: visible; display: block; }
+      #tab-hotspots .flex { height: auto !important; overflow: visible !important; }
+      .left-panel { overflow: visible; }
+      .right-panel { overflow: visible; }
+      .kpi-row { position: static; }
+      /* 侧栏：手机默认收成 64px 图标条，可展开成 220px 抽屉 */
+      .sidebar { width: 64px; }
+      .sidebar-logo { padding: 12px; text-align: center; }
+      .sidebar-logo .text-lg { font-size: 14px !important; }
+      .sidebar-logo .text-xs { display: none; }
+      .nav-item { padding: 12px 0; justify-content: center; }
+      .nav-item span { display: none; }
+      .nav-item i { margin-right: 0; }
+      .sidebar-foot { display: none; }
+      .sidebar.expanded { width: 220px; }
+      .sidebar.expanded .nav-item { justify-content: flex-start; padding: 12px 20px; }
+      .sidebar.expanded .nav-item span { display: inline; }
+      .sidebar.expanded .nav-item i { margin-right: 12px; }
+      .sidebar.expanded .sidebar-foot { display: block; }
+      .sidebar.expanded .sidebar-logo .text-lg { font-size: 18px !important; }
+      .sidebar.expanded .sidebar-logo .text-xs { display: block; }
+      .sidebar-close { display: block; }
+      .sidebar-overlay.open { display: block; }
+      .main-content { margin-left: 64px; }
+      .mobile-header { display: flex; }
+      .kpi-row { padding: 12px 16px; }
+      .kpi-row .flex { flex-direction: column; gap: 10px; }
+      .kpi-card { min-width: 0; width: 100%; }
+      .kpi-value { font-size: 22px; }
+      /* 热点看板：表格与看板上下堆叠，各占全宽 */
+      #tab-hotspots .flex { flex-direction: column; }
+      .left-panel { width: 100% !important; }
+      .right-panel { width: 100% !important; border-left: none; border-top: 1px solid #C4B8A5; }
+      .table-container { overflow-x: auto; }
+      .kanban-board { flex-direction: column; }
+      .kanban-column { min-width: 0; }
+      /* 各 tab 内边距收窄 */
+      #tab-topics > div, #tab-rewrite > div, #tab-publish > div, #tab-library > div, #tab-settings > div { padding: 12px !important; }
+      .data-table { min-width: 700px; }
+      #rewrite-grid { grid-template-columns: 1fr !important; }
+      #library-grid { grid-template-columns: 1fr !important; }
+      #rewrite-grid .empty-state, #library-grid .empty-state { grid-column: 1 !important; }
+      .filter-bar { gap: 8px; }
+      .filter-bar input, .filter-bar select { width: 100%; }
+      .filter-bar { flex-direction: column; }
+      .drawer { width: 100% !important; }
+      .modal { width: 100% !important; max-width: 100% !important; margin: 0; height: 100%; }
+      .modal-overlay { padding: 0 !important; }
+      .view-toggle { flex-wrap: wrap; }
+    }
   </style>
 </head>
 <body>
+  <!-- Mobile: overlay behind expanded sidebar -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
   <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="text-white font-serif text-lg font-semibold">内容工厂</div>
-      <div class="text-white/60 text-xs mt-1">硬件老兵学AI</div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo" style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px">
+        <i class="fas fa-cog text-white/80" style="display:none" id="sidebar-logo-icon"></i>
+        <div>
+          <div class="text-white font-serif text-lg font-semibold">内容工厂</div>
+          <div class="text-white/60 text-xs mt-1">硬件老兵学AI</div>
+        </div>
+      </div>
+      <button class="sidebar-close" id="sidebar-toggle" onclick="toggleSidebar()" style="background:transparent;border:none;color:rgba(255,255,255,0.7);cursor:pointer">
+        <i class="fas fa-chevron-left" style="font-size:14px"></i>
+      </button>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-item active" data-tab="hotspots" onclick="switchTab('hotspots')">
@@ -157,13 +230,20 @@
         <span>系统设置</span>
       </div>
     </nav>
-    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+    <div class="sidebar-foot">
       <div class="text-white/60 text-xs">v1.0.0 · localStorage</div>
     </div>
   </aside>
 
   <!-- Main Content -->
   <main class="main-content">
+    <!-- Mobile top bar -->
+    <div class="mobile-header" style="background:#1A56DB;padding:10px 16px;align-items:center;gap:12px">
+      <button onclick="toggleSidebar()" style="background:transparent;border:none;color:white;cursor:pointer;font-size:18px">
+        <i class="fas fa-bars"></i>
+      </button>
+      <span style="color:white;font-weight:600;font-size:15px">内容工厂 · 硬件老兵学AI</span>
+    </div>
     <!-- KPI Row -->
     <div class="kpi-row">
       <div class="flex gap-6">
@@ -609,6 +689,17 @@
       document.getElementById('kpi-selection').textContent = todayHotspots.length > 0 ? Math.round((todayHotspots.filter(h => h.status === 'selected' || h.status === 'rewriting' || h.status === 'published').length / todayHotspots.length) * 100) + '%' : '0%';
       document.getElementById('kpi-rewrite').textContent = todayHotspots.length > 0 ? Math.round((todayHotspots.filter(h => h.status === 'rewriting' || h.status === 'published').length / todayHotspots.length) * 100) + '%' : '0%';
       document.getElementById('kpi-publish').textContent = published > 0 ? '100%' : '0%';
+    }
+
+    // Sidebar (mobile drawer)
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      const ov = document.getElementById('sidebar-overlay');
+      const open = !sb.classList.contains('expanded');
+      sb.classList.toggle('expanded', open);
+      ov.classList.toggle('open', open);
+      const arrow = document.querySelector('#sidebar-toggle i');
+      if (arrow) arrow.className = open ? 'fas fa-chevron-left' : 'fas fa-bars';
     }
 
     // Actions
