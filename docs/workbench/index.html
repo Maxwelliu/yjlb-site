@@ -445,7 +445,12 @@
     <div class="modal" style="max-width:700px">
       <div class="modal-header">
         <div class="panel-title" id="detail-modal-title">详情</div>
-        <button class="btn btn-icon" onclick="closeDetailModal()"><i class="fas fa-times"></i></button>
+        <div class="flex items-center gap-2">
+          <button class="btn btn-sm btn-secondary" id="detail-edit-btn" onclick="toggleDetailEdit(true)"><i class="fas fa-pen"></i> 编辑</button>
+          <button class="btn btn-sm btn-primary" id="detail-save-btn" onclick="saveDetailEdit()" style="display:none"><i class="fas fa-check"></i> 保存</button>
+          <button class="btn btn-sm btn-secondary" id="detail-cancel-btn" onclick="toggleDetailEdit(false)" style="display:none"><i class="fas fa-undo"></i> 取消</button>
+          <button class="btn btn-icon" onclick="closeDetailModal()"><i class="fas fa-times"></i></button>
+        </div>
       </div>
       <div class="modal-body" id="detail-modal-body"></div>
     </div>
@@ -1044,61 +1049,141 @@
     }
 
     // Toast
-    // Detail Modal
+    // Detail Modal (with edit)
+    let detailState = { type: null, id: null, editMode: false };
+
     function openDetail(type, id) {
+      detailState = { type, id, editMode: false };
+      renderDetailModal();
+      document.getElementById('detail-modal').classList.add('open');
+    }
+
+    function renderDetailModal() {
+      const { type, id, editMode } = detailState;
       let title = '', body = '';
+      const editing = editMode;
+
       if (type === 'topic') {
         const t = data.topics.find(x => x.id === id);
         if (!t) return;
         const h = data.hotspots.find(x => x.id === t.hotspot_id);
         title = t.title || h?.title || '选题详情';
-        body = `
-          <div class="space-y-3">
-            <div><strong>来源热点：</strong><span class="text-sm text-textMuted">${h?.title || '未知热点'}</span></div>
-            <div><strong>来源：</strong><span class="text-sm text-textMuted">${h?.source || '-'}</span></div>
-            <div><strong>类别：</strong><span class="text-sm text-textMuted">${h?.category || '-'}</span></div>
-            <div><strong>权重：</strong><span class="text-sm text-textMuted">${h?.weight ?? '-'}</span></div>
-            <div><strong>优先级：</strong><span class="text-sm text-textMuted">${t.priority || '中'}</span></div>
-            <div><strong>备注：</strong><span class="text-sm text-textMuted">${t.note || '无'}</span></div>
-            <div><strong>创建时间：</strong><span class="text-sm text-textMuted">${t.created_at}</span></div>
-            ${h ? `<div class="mt-3"><strong>热点状态：</strong>${getStatusBadge(h.status)} 平台：${getPlatformDots(h.platforms)}</div>` : ''}
-          </div>`;
+        if (editing) {
+          body = `
+            <div class="form-group">
+              <label class="form-label">选题标题</label>
+              <input type="text" id="edit-topic-title" class="form-input" value="${escHtml(t.title || '')}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">优先级</label>
+              <select id="edit-topic-priority" class="form-select">
+                <option value="high" ${t.priority === 'high' ? 'selected' : ''}>高</option>
+                <option value="medium" ${(!t.priority || t.priority === 'medium') ? 'selected' : ''}>中</option>
+                <option value="low" ${t.priority === 'low' ? 'selected' : ''}>低</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">备注</label>
+              <textarea id="edit-topic-note" class="form-textarea" style="min-height:80px">${escHtml(t.note || '')}</textarea>
+            </div>
+            <div class="text-xs text-textMuted">来源热点：${h?.title || '未知'}（${h?.source || '-'}）· 权重 ${h?.weight ?? '-'} · ${t.created_at}</div>`;
+        } else {
+          body = `
+            <div class="space-y-3">
+              <div><strong>来源热点：</strong><span class="text-sm text-textMuted">${h?.title || '未知热点'}</span></div>
+              <div><strong>来源：</strong><span class="text-sm text-textMuted">${h?.source || '-'}</span></div>
+              <div><strong>类别：</strong><span class="text-sm text-textMuted">${h?.category || '-'}</span></div>
+              <div><strong>权重：</strong><span class="text-sm text-textMuted">${h?.weight ?? '-'}</span></div>
+              <div><strong>优先级：</strong><span class="text-sm text-textMuted">${t.priority || '中'}</span></div>
+              <div><strong>备注：</strong><span class="text-sm text-textMuted">${t.note || '无'}</span></div>
+              <div><strong>创建时间：</strong><span class="text-sm text-textMuted">${t.created_at}</span></div>
+              ${h ? `<div class="mt-3"><strong>热点状态：</strong>${getStatusBadge(h.status)} 平台：${getPlatformDots(h.platforms)}</div>` : ''}
+            </div>`;
+        }
       } else if (type === 'rewrite') {
         const r = data.rewritings.find(x => x.id === id);
         if (!r) return;
         const h = data.hotspots.find(x => x.id === r.hotspot_id);
         title = `改写：${r.direction}`;
-        body = `
-          <div class="space-y-3">
-            <div><strong>原文标题：</strong><span class="text-sm text-textMuted">${h?.title || '-'}</span></div>
-            <div><strong>分发平台：</strong>${getPlatformDots(r.platforms)}</div>
-            <div class="mt-2"><strong>改写内容：</strong>
-              <div class="mt-1 p-3 bg-paper border border-border rounded text-sm text-textBody whitespace-pre-wrap">${r.content || '（内容待补充）'}</div>
+        if (editing) {
+          body = `
+            <div class="text-xs text-textMuted mb-3">原文：${escHtml(h?.title || '-')}</div>
+            <div class="form-group">
+              <label class="form-label">改写方向</label>
+              <select id="edit-rewrite-direction" class="form-select">
+                ${['公众号长文','快讯短文','小红书','知乎回答'].map(d => `<option value="${d}" ${r.direction === d ? 'selected' : ''}>${d}</option>`).join('')}
+              </select>
             </div>
-            ${r.note ? `<div><strong>备注：</strong><span class="text-sm text-textMuted">${r.note}</span></div>` : ''}
-            <div><strong>创建时间：</strong><span class="text-sm text-textMuted">${r.created_at}</span></div>
-          </div>`;
+            <div class="form-group">
+              <label class="form-label">改写内容</label>
+              <textarea id="edit-rewrite-content" class="form-textarea">${escHtml(r.content || '')}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">分发平台</label>
+              <div id="edit-rewrite-platforms" class="flex flex-wrap gap-2">
+                ${data.platforms.map(p => `
+                  <label class="flex items-center gap-2 px-3 py-2 border border-border rounded cursor-pointer hover:bg-paper">
+                    <input type="checkbox" class="edit-platform-cb" value="${p}" ${r.platforms?.includes(p) ? 'checked' : ''}>
+                    <span>${p}</span>
+                  </label>`).join('')}
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">备注</label>
+              <input type="text" id="edit-rewrite-note" class="form-input" value="${escHtml(r.note || '')}">
+            </div>`;
+        } else {
+          body = `
+            <div class="space-y-3">
+              <div><strong>原文标题：</strong><span class="text-sm text-textMuted">${h?.title || '-'}</span></div>
+              <div><strong>改写方向：</strong><span class="text-sm text-textMuted">${r.direction}</span></div>
+              <div><strong>分发平台：</strong>${getPlatformDots(r.platforms)}</div>
+              <div class="mt-2"><strong>改写内容：</strong>
+                <div class="mt-1 p-3 bg-paper border border-border rounded text-sm text-textBody whitespace-pre-wrap">${escHtml(r.content || '（内容待补充）')}</div>
+              </div>
+              ${r.note ? `<div><strong>备注：</strong><span class="text-sm text-textMuted">${escHtml(r.note)}</span></div>` : ''}
+              <div><strong>创建时间：</strong><span class="text-sm text-textMuted">${r.created_at}</span></div>
+            </div>`;
+        }
       } else if (type === 'publish') {
         const p = data.publishes.find(x => x.id === id);
         if (!p) return;
         title = `发布记录 · ${p.platform}`;
-        body = `
-          <div class="space-y-3">
-            <div><strong>内容 ID：</strong><span class="text-sm text-textMuted">${p.content_id || p.id}</span></div>
-            <div><strong>平台：</strong><span class="platform-tag platform-wechat">${p.platform}</span></div>
-            <div><strong>状态：</strong>${p.status === 'success' ? '✅ 成功' : '⚠️ 失败'}</div>
-            <div><strong>发布时间：</strong><span class="text-sm text-textMuted">${p.published_at}</span></div>
-            ${p.url ? `<div><strong>链接：</strong><a href="${p.url}" target="_blank" class="text-primary hover:underline">${p.url}</a></div>` : ''}
-          </div>`;
+        if (editing) {
+          body = `
+            <div class="form-group">
+              <label class="form-label">状态</label>
+              <select id="edit-publish-status" class="form-select">
+                <option value="success" ${p.status === 'success' ? 'selected' : ''}>成功</option>
+                <option value="failed" ${p.status !== 'success' ? 'selected' : ''}>失败</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">链接</label>
+              <input type="text" id="edit-publish-url" class="form-input" value="${escHtml(p.url || '')}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">平台</label>
+              <input type="text" id="edit-publish-platform" class="form-input" value="${escHtml(p.platform || '')}">
+            </div>
+            <div class="text-xs text-textMuted">内容 ID：${p.content_id || p.id} · 发布时间 ${p.published_at}</div>`;
+        } else {
+          body = `
+            <div class="space-y-3">
+              <div><strong>内容 ID：</strong><span class="text-sm text-textMuted">${p.content_id || p.id}</span></div>
+              <div><strong>平台：</strong><span class="platform-tag platform-wechat">${p.platform}</span></div>
+              <div><strong>状态：</strong>${p.status === 'success' ? '✅ 成功' : '⚠️ 失败'}</div>
+              <div><strong>发布时间：</strong><span class="text-sm text-textMuted">${p.published_at}</span></div>
+              ${p.url ? `<div><strong>链接：</strong><a href="${escHtml(p.url)}" target="_blank" class="text-primary hover:underline">${escHtml(p.url)}</a></div>` : ''}
+            </div>`;
+        }
       } else if (type === 'library') {
-        const item = data.hotspots.find(x => x.id === id)
-          || data.topics.find(x => x.id === id)
-          || data.rewritings.find(x => x.id === id)
-          || data.publishes.find(x => x.id === id);
+        const item = findItemById(id);
         if (!item) return;
         title = item.title || item.direction || item.platform || '内容详情';
         body = `
           <div class="space-y-3">
+            <div><strong>类型：</strong><span class="text-sm text-textMuted">${itemTypeOf(id)}</span></div>
             <div><strong>标题：</strong><span class="text-sm text-textMuted">${item.title || '-'}</span></div>
             ${item.source ? `<div><strong>来源：</strong><span class="text-sm text-textMuted">${item.source}</span></div>` : ''}
             ${item.category ? `<div><strong>类别：</strong><span class="text-sm text-textMuted">${item.category}</span></div>` : ''}
@@ -1106,19 +1191,95 @@
             ${item.direction ? `<div><strong>改写方向：</strong><span class="text-sm text-textMuted">${item.direction}</span></div>` : ''}
             ${item.platform ? `<div><strong>平台：</strong><span class="platform-tag platform-wechat">${item.platform}</span></div>` : ''}
             ${item.status ? `<div><strong>状态：</strong>${getStatusBadge(item.status)}</div>` : ''}
-            ${item.note ? `<div><strong>备注：</strong><span class="text-sm text-textMuted">${item.note}</span></div>` : ''}
-            ${item.content ? `<div class="mt-2"><strong>内容：</strong><div class="mt-1 p-3 bg-paper border border-border rounded text-sm text-textBody whitespace-pre-wrap">${item.content}</div></div>` : ''}
+            ${item.note ? `<div><strong>备注：</strong><span class="text-sm text-textMuted">${escHtml(item.note)}</span></div>` : ''}
+            ${item.content ? `<div class="mt-2"><strong>内容：</strong><div class="mt-1 p-3 bg-paper border border-border rounded text-sm text-textBody whitespace-pre-wrap">${escHtml(item.content)}</div></div>` : ''}
             ${item.created_at ? `<div><strong>创建时间：</strong><span class="text-sm text-textMuted">${item.created_at}</span></div>` : ''}
+            <div class="text-xs text-textMuted mt-2">💡 在对应列表页（选题/改写/发布记录）打开此条目可编辑</div>
           </div>`;
       }
+
       document.getElementById('detail-modal-title').textContent = title;
       document.getElementById('detail-modal-body').innerHTML = body;
-      document.getElementById('detail-modal').classList.add('open');
+      const editBtn = document.getElementById('detail-edit-btn');
+      const saveBtn = document.getElementById('detail-save-btn');
+      const cancelBtn = document.getElementById('detail-cancel-btn');
+      editBtn.style.display = editing ? 'none' : '';
+      saveBtn.style.display = editing ? '' : 'none';
+      cancelBtn.style.display = editing ? '' : 'none';
+    }
+
+    function findItemById(id) {
+      return data.hotspots.find(x => x.id === id)
+        || data.topics.find(x => x.id === id)
+        || data.rewritings.find(x => x.id === id)
+        || data.publishes.find(x => x.id === id);
+    }
+    function itemTypeOf(id) {
+      if (data.hotspots.find(x => x.id === id)) return 'topic';
+      if (data.topics.find(x => x.id === id)) return 'topic';
+      if (data.rewritings.find(x => x.id === id)) return 'rewrite';
+      if (data.publishes.find(x => x.id === id)) return 'publish';
+      return 'topic';
+    }
+    function escHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function toggleDetailEdit(on) {
+      detailState.editMode = on;
+      renderDetailModal();
+    }
+
+    function saveDetailEdit() {
+      const { type, id } = detailState;
+      if (type === 'topic') {
+        const t = data.topics.find(x => x.id === id);
+        if (!t) return;
+        t.title = document.getElementById('edit-topic-title').value.trim() || t.title;
+        t.priority = document.getElementById('edit-topic-priority').value;
+        t.note = document.getElementById('edit-topic-note').value.trim();
+        t.updated_at = new Date().toISOString();
+      } else if (type === 'rewrite') {
+        const r = data.rewritings.find(x => x.id === id);
+        if (!r) return;
+        r.direction = document.getElementById('edit-rewrite-direction').value;
+        r.content = document.getElementById('edit-rewrite-content').value;
+        r.note = document.getElementById('edit-rewrite-note').value.trim();
+        r.platforms = Array.from(document.querySelectorAll('.edit-platform-cb:checked')).map(c => c.value);
+        r.updated_at = new Date().toISOString();
+      } else if (type === 'publish') {
+        const p = data.publishes.find(x => x.id === id);
+        if (!p) return;
+        p.status = document.getElementById('edit-publish-status').value;
+        p.url = document.getElementById('edit-publish-url').value.trim();
+        p.platform = document.getElementById('edit-publish-platform').value.trim() || p.platform;
+        p.updated_at = new Date().toISOString();
+      }
+      saveData();
+      detailState.editMode = false;
+      renderDetailModal();
+      refreshCurrentList();
+      showToast('已保存修改');
+    }
+
+    function refreshCurrentList() {
+      const activeTab = document.querySelector('.nav-item.active')?.dataset.tab;
+      if (activeTab === 'topics') renderTopics();
+      else if (activeTab === 'rewrite') renderRewrite();
+      else if (activeTab === 'publish') renderPublish();
+      else if (activeTab === 'library') renderLibrary();
+      else if (activeTab === 'hotspots') renderHotspots();
     }
 
     function closeDetailModal() {
       document.getElementById('detail-modal').classList.remove('open');
+      detailState = { type: null, id: null, editMode: false };
     }
+
+    // 点击遮罩关闭
+    document.getElementById('detail-modal').addEventListener('click', e => {
+      if (e.target.id === 'detail-modal') closeDetailModal();
+    });
 
     function showToast(msg, type = 'success') {
       const container = document.getElementById('toast-container');
