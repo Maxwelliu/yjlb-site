@@ -85,12 +85,12 @@
     .platform-baijiahao { background: #4A6B8A; color: white; }
     .platform-xiaohongshu { background: #DE2747; color: white; }
     .kanban-board { display: flex; gap: 12px; min-height: 100%; }
-    .kanban-column { flex: 1; min-width: 150px; background: #F5F0E6; border-radius: 2px; padding: 12px; }
+    .kanban-column { flex: 1; min-width: 260px; background: #F5F0E6; border-radius: 2px; padding: 12px; }
     .kanban-column-header { font-size: 13px; font-weight: 600; color: #4A3F35; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #1A56DB; display: flex; justify-content: space-between; align-items: center; }
     .kanban-count { background: #1A56DB; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
     .kanban-card { background: white; border: 1px solid #C4B8A5; border-radius: 2px; padding: 12px; margin-bottom: 8px; cursor: move; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .kanban-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .kanban-card-title { font-size: 13px; font-weight: 600; color: #2C2416; margin-bottom: 6px; line-height: 1.4; }
+    .kanban-card-title { font-size: 13px; font-weight: 600; color: #2C2416; margin-bottom: 6px; line-height: 1.4; word-break: break-word; }
     .kanban-card-meta { font-size: 11px; color: #8C7E6B; margin-bottom: 8px; }
     .kanban-card-footer { display: flex; justify-content: space-between; align-items: center; }
     .progress-bar { height: 4px; background: #E5E0D6; border-radius: 2px; overflow: hidden; margin-top: 8px; }
@@ -199,7 +199,7 @@
     <div class="content-area">
       <!-- Hotspots Tab -->
       <div id="tab-hotspots" class="tab-content active" style="width:100%">
-        <div class="flex h-full" style="overflow-y:auto; height:calc(100vh - 120px)">
+        <div class="flex" style="overflow:auto; height:calc(100vh - 120px)">
           <!-- Left: Table -->
           <div class="left-panel">
             <div class="panel-header">
@@ -561,7 +561,7 @@
           </div>
           ${data.hotspots.filter(h => h.status === col.key).map(h => `
             <div class="kanban-card" onclick="openRewrite(${h.id})">
-              <div class="kanban-card-title">${h.title.substring(0, 40)}...</div>
+              <div class="kanban-card-title">${h.title}</div>
               <div class="kanban-card-meta">${h.source} · 权重${h.weight}</div>
               <div class="kanban-card-footer">
                 <div>${getPlatformDots(h.platforms)}</div>
